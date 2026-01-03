@@ -31,6 +31,12 @@ const usuariosService = {
   delete: async (id) => {
     const response = await api.delete(`/usuarios/${id}`);
     return response.data;
+  },
+
+  // Obtener usuarios responsables (administradores y abogados)
+  getResponsables: async () => {
+    const response = await api.get('/usuarios/responsables');
+    return response.data;
   }
 };
 

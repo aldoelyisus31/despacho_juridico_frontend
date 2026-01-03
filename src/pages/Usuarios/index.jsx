@@ -2,20 +2,21 @@ import { useState, useEffect } from 'react';
 import { 
   Plus, 
   Search, 
-  Eye, 
   Edit, 
   Trash2,
   Users,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  UserCheck,
+  UserX
 } from 'lucide-react';
 import Swal from 'sweetalert2';
-import clientesService from '../../services/clientesService';
-import ClienteFormModal from './ClienteFormModal';
-import './Clientes.css';
+import usuariosService from '../../services/usuariosService';
+import UsuarioFormModal from './UsuarioFormModal';
+import './Usuarios.css';
 
-function Clientes() {
-  const [clientes, setClientes] = useState([]);
+function Usuarios() {
+  const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -25,38 +26,37 @@ function Clientes() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [clienteToEdit, setClienteToEdit] = useState(null);
+  const [usuarioToEdit, setUsuarioToEdit] = useState(null);
 
   useEffect(() => {
-    loadClientes();
+    loadUsuarios();
   }, [currentPage]);
 
-  const loadClientes = async () => {
+  const loadUsuarios = async () => {
     try {
       setLoading(true);
       setError('');
-      const response = await clientesService.getAll(currentPage, limit);
+      const response = await usuariosService.getAll(currentPage, limit);
       
-      // El backend devuelve { data: { data: [...], meta: {...} } }
       const { data, meta } = response.data;
       
-      setClientes(data);
+      setUsuarios(data);
       setTotal(meta.total);
       setTotalPages(meta.totalPages);
     } catch (err) {
-      console.error('Error al cargar clientes:', err);
-      setError('Error al cargar los clientes');
+      console.error('Error al cargar usuarios:', err);
+      setError('Error al cargar los usuarios');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCreateCliente = async (clienteData) => {
+  const handleCreateUsuario = async (usuarioData) => {
     // Si es edición
-    if (clienteToEdit) {
+    if (usuarioToEdit) {
       const result = await Swal.fire({
-        title: '¿Actualizar cliente?',
-        text: `Se actualizarán los datos de: ${clienteData.nombres} ${clienteData.apellidoPaterno}`,
+        title: '¿Actualizar usuario?',
+        text: `Se actualizarán los datos de: ${usuarioData.nombres} ${usuarioData.apellidoPaterno}`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#e67e22',
@@ -74,13 +74,13 @@ function Clientes() {
 
       try {
         setSubmitting(true);
-        await clientesService.update(clienteToEdit.id, clienteData);
+        await usuariosService.update(usuarioToEdit.id, usuarioData);
         setIsModalOpen(false);
-        setClienteToEdit(null);
+        setUsuarioToEdit(null);
         
         await Swal.fire({
-          title: '¡Cliente actualizado!',
-          text: 'Los datos del cliente se han actualizado correctamente',
+          title: '¡Usuario actualizado!',
+          text: 'Los datos del usuario se han actualizado correctamente',
           icon: 'success',
           confirmButtonColor: '#e67e22',
           confirmButtonText: 'Aceptar',
@@ -89,13 +89,13 @@ function Clientes() {
           }
         });
 
-        await loadClientes();
+        await loadUsuarios();
       } catch (err) {
-        console.error('Error al actualizar cliente:', err);
+        console.error('Error al actualizar usuario:', err);
         
         await Swal.fire({
           title: 'Error',
-          text: err.message || 'No se pudo actualizar el cliente. Por favor, intente de nuevo.',
+          text: err.response?.data?.message || 'No se pudo actualizar el usuario. Por favor, intente de nuevo.',
           icon: 'error',
           confirmButtonColor: '#e67e22',
           confirmButtonText: 'Aceptar',
@@ -113,8 +113,8 @@ function Clientes() {
 
     // Si es creación
     const result = await Swal.fire({
-      title: '¿Crear nuevo cliente?',
-      text: `Se creará el cliente: ${clienteData.nombres} ${clienteData.apellidoPaterno}`,
+      title: '¿Crear nuevo usuario?',
+      text: `Se creará el usuario: ${usuarioData.nombres} ${usuarioData.apellidoPaterno}`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#e67e22',
@@ -132,12 +132,12 @@ function Clientes() {
 
     try {
       setSubmitting(true);
-      await clientesService.create(clienteData);
+      await usuariosService.create(usuarioData);
       setIsModalOpen(false);
       
       await Swal.fire({
-        title: '¡Cliente creado!',
-        text: 'El cliente se ha registrado correctamente',
+        title: '¡Usuario creado!',
+        text: 'El usuario se ha registrado correctamente',
         icon: 'success',
         confirmButtonColor: '#e67e22',
         confirmButtonText: 'Aceptar',
@@ -147,16 +147,16 @@ function Clientes() {
       });
 
       if (currentPage === 1) {
-        await loadClientes();
+        await loadUsuarios();
       } else {
         setCurrentPage(1);
       }
     } catch (err) {
-      console.error('Error al crear cliente:', err);
+      console.error('Error al crear usuario:', err);
       
       await Swal.fire({
         title: 'Error',
-        text: err.message || 'No se pudo crear el cliente. Por favor, intente de nuevo.',
+        text: err.response?.data?.message || 'No se pudo crear el usuario. Por favor, intente de nuevo.',
         icon: 'error',
         confirmButtonColor: '#e67e22',
         confirmButtonText: 'Aceptar',
@@ -171,15 +171,15 @@ function Clientes() {
     }
   };
 
-  const handleEditCliente = (cliente) => {
-    setClienteToEdit(cliente);
+  const handleEditUsuario = (usuario) => {
+    setUsuarioToEdit(usuario);
     setIsModalOpen(true);
   };
 
-  const handleDeleteCliente = async (cliente) => {
+  const handleDeleteUsuario = async (usuario) => {
     const result = await Swal.fire({
-      title: '¿Eliminar cliente?',
-      html: `Se eliminará el cliente:<br><strong>${cliente.nombres} ${cliente.apellidoPaterno} ${cliente.apellidoMaterno || ''}</strong><br>Esta acción no se puede deshacer.`,
+      title: '¿Eliminar usuario?',
+      html: `Se eliminará el usuario:<br><strong>${usuario.nombres} ${usuario.apellidoPaterno} ${usuario.apellidoMaterno || ''}</strong><br>Esta acción es reversible.`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#dc2626',
@@ -196,11 +196,11 @@ function Clientes() {
     }
 
     try {
-      const response = await clientesService.delete(cliente.id);
+      const response = await usuariosService.delete(usuario.id);
       
       await Swal.fire({
-        title: '¡Cliente eliminado!',
-        text: response.data.message || 'El cliente se ha eliminado correctamente',
+        title: '¡Usuario eliminado!',
+        text: response.data.message || 'El usuario se ha eliminado correctamente',
         icon: 'success',
         confirmButtonColor: '#e67e22',
         confirmButtonText: 'Aceptar',
@@ -209,13 +209,13 @@ function Clientes() {
         }
       });
 
-      await loadClientes();
+      await loadUsuarios();
     } catch (err) {
-      console.error('Error al eliminar cliente:', err);
+      console.error('Error al eliminar usuario:', err);
       
       await Swal.fire({
         title: 'Error',
-        text: err.message || 'No se pudo eliminar el cliente. Por favor, intente de nuevo.',
+        text: err.response?.data?.message || 'No se pudo eliminar el usuario. Por favor, intente de nuevo.',
         icon: 'error',
         confirmButtonColor: '#e67e22',
         confirmButtonText: 'Aceptar',
@@ -228,7 +228,7 @@ function Clientes() {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setClienteToEdit(null);
+    setUsuarioToEdit(null);
   };
 
   const handlePreviousPage = () => {
@@ -278,20 +278,31 @@ function Clientes() {
     return pages;
   };
 
-  const filteredClientes = clientes.filter(cliente => {
+  const getTipoUsuarioLabel = (tipo) => {
+    const labels = {
+      root: 'Root',
+      administrador: 'Administrador',
+      administrativo: 'Administrativo',
+      abogado: 'Abogado',
+      pasante: 'Pasante'
+    };
+    return labels[tipo] || tipo;
+  };
+
+  const filteredUsuarios = usuarios.filter(usuario => {
     const searchLower = searchTerm.toLowerCase();
-    const nombreCompleto = `${cliente.nombres} ${cliente.apellidoPaterno} ${cliente.apellidoMaterno || ''}`.toLowerCase();
+    const nombreCompleto = `${usuario.nombres} ${usuario.apellidoPaterno} ${usuario.apellidoMaterno || ''}`.toLowerCase();
     return nombreCompleto.includes(searchLower) || 
-           cliente.email.toLowerCase().includes(searchLower) ||
-           cliente.celular.includes(searchTerm);
+           usuario.email.toLowerCase().includes(searchLower) ||
+           getTipoUsuarioLabel(usuario.tipoUsuario).toLowerCase().includes(searchLower);
   });
 
   return (
-    <div className="clientes-page">
+    <div className="usuarios-page">
       <div className="page-header">
         <div className="page-title-section">
-          <h1>Clientes</h1>
-          <p>Gestión de clientes del despacho</p>
+          <h1>Usuarios</h1>
+          <p>Gestión de usuarios del sistema</p>
         </div>
         <div className="page-actions">
           <button 
@@ -299,7 +310,7 @@ function Clientes() {
             onClick={() => setIsModalOpen(true)}
           >
             <Plus size={20} />
-            Nuevo Cliente
+            Nuevo Usuario
           </button>
         </div>
       </div>
@@ -315,7 +326,7 @@ function Clientes() {
           <Search size={18} />
           <input
             type="text"
-            placeholder="Buscar por nombre, email o celular..."
+            placeholder="Buscar por nombre, email o tipo..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -327,76 +338,80 @@ function Clientes() {
           {loading ? (
             <div className="loading-state">
               <Users size={48} />
-              <h3>Cargando clientes...</h3>
+              <h3>Cargando usuarios...</h3>
               <p>Por favor espera un momento</p>
             </div>
-          ) : filteredClientes.length === 0 ? (
+          ) : filteredUsuarios.length === 0 ? (
             <div className="empty-state">
               <Users size={48} />
-              <h3>No hay clientes</h3>
+              <h3>No hay usuarios</h3>
               <p>
                 {searchTerm 
-                  ? 'No se encontraron clientes con ese criterio de búsqueda'
-                  : 'Comienza agregando tu primer cliente'}
+                  ? 'No se encontraron usuarios con ese criterio de búsqueda'
+                  : 'Comienza agregando tu primer usuario'}
               </p>
             </div>
           ) : (
             <>
               {/* Vista de tabla para pantallas grandes */}
-              <table className="clientes-table">
+              <table className="usuarios-table">
                 <thead>
                   <tr>
-                    <th>Cliente</th>
-                    <th>Contacto</th>
-                    <th>Dirección</th>
+                    <th>Usuario</th>
+                    <th>Email</th>
                     <th>Tipo</th>
+                    <th>Fecha Nacimiento</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredClientes.map((cliente) => (
-                    <tr key={cliente.id}>
+                  {filteredUsuarios.map((usuario) => (
+                    <tr key={usuario.id}>
                       <td>
-                        <div className="cliente-nombre">
-                          {cliente.nombres} {cliente.apellidoPaterno} {cliente.apellidoMaterno}
+                        <div className="usuario-nombre">
+                          {usuario.nombres} {usuario.apellidoPaterno} {usuario.apellidoMaterno}
                         </div>
                       </td>
                       <td>
-                        <div>{cliente.celular}</div>
-                        <div className="cliente-email">{cliente.email}</div>
+                        <div className="usuario-email">{usuario.email}</div>
                       </td>
                       <td>
-                        <div style={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {cliente.direccion}
-                        </div>
-                      </td>
-                      <td>
-                        <span className={`badge badge-${cliente.tipo}`}>
-                          {cliente.tipo === 'particular' ? 'Particular' : 'Empresa'}
+                        <span className={`badge badge-tipo badge-${usuario.tipoUsuario}`}>
+                          {getTipoUsuarioLabel(usuario.tipoUsuario)}
                         </span>
                       </td>
                       <td>
-                        <span className={`badge badge-${cliente.activo ? 'activo' : 'inactivo'}`}>
-                          {cliente.activo ? 'Activo' : 'Inactivo'}
+                        <div>{new Date(usuario.fechaNacimiento).toLocaleDateString('es-MX')}</div>
+                      </td>
+                      <td>
+                        <span className={`badge badge-${usuario.activo ? 'activo' : 'inactivo'}`}>
+                          {usuario.activo ? (
+                            <>
+                              <UserCheck size={14} />
+                              Activo
+                            </>
+                          ) : (
+                            <>
+                              <UserX size={14} />
+                              Inactivo
+                            </>
+                          )}
                         </span>
                       </td>
                       <td>
                         <div className="table-actions">
-                          <button className="btn-icon" title="Ver detalles">
-                            <Eye size={18} />
-                          </button>
                           <button 
                             className="btn-icon" 
                             title="Editar"
-                            onClick={() => handleEditCliente(cliente)}
+                            onClick={() => handleEditUsuario(usuario)}
                           >
                             <Edit size={18} />
                           </button>
                           <button 
                             className="btn-icon btn-icon-danger" 
                             title="Eliminar"
-                            onClick={() => handleDeleteCliente(cliente)}
+                            onClick={() => handleDeleteUsuario(usuario)}
                           >
                             <Trash2 size={18} />
                           </button>
@@ -408,45 +423,37 @@ function Clientes() {
               </table>
 
               {/* Vista de tarjetas para dispositivos móviles */}
-              <div className="clientes-cards">
-                {filteredClientes.map((cliente) => (
-                  <div key={cliente.id} className="cliente-card">
+              <div className="usuarios-cards">
+                {filteredUsuarios.map((usuario) => (
+                  <div key={usuario.id} className="usuario-card">
                     <div className="card-header">
-                      <div className="cliente-nombre">
-                        {cliente.nombres} {cliente.apellidoPaterno} {cliente.apellidoMaterno}
+                      <div className="usuario-nombre">
+                        {usuario.nombres} {usuario.apellidoPaterno} {usuario.apellidoMaterno}
                       </div>
                       <div className="card-badges">
-                        <span className={`badge badge-${cliente.tipo}`}>
-                          {cliente.tipo === 'particular' ? 'Particular' : 'Empresa'}
+                        <span className={`badge badge-tipo badge-${usuario.tipoUsuario}`}>
+                          {getTipoUsuarioLabel(usuario.tipoUsuario)}
                         </span>
-                        <span className={`badge badge-${cliente.activo ? 'activo' : 'inactivo'}`}>
-                          {cliente.activo ? 'Activo' : 'Inactivo'}
+                        <span className={`badge badge-${usuario.activo ? 'activo' : 'inactivo'}`}>
+                          {usuario.activo ? 'Activo' : 'Inactivo'}
                         </span>
                       </div>
                     </div>
                     <div className="card-body">
                       <div className="card-info">
-                        <strong>Celular:</strong>
-                        <span>{cliente.celular}</span>
-                      </div>
-                      <div className="card-info">
                         <strong>Email:</strong>
-                        <span className="cliente-email">{cliente.email}</span>
+                        <span className="usuario-email">{usuario.email}</span>
                       </div>
                       <div className="card-info">
-                        <strong>Dirección:</strong>
-                        <span>{cliente.direccion}</span>
+                        <strong>Fecha Nacimiento:</strong>
+                        <span>{new Date(usuario.fechaNacimiento).toLocaleDateString('es-MX')}</span>
                       </div>
                     </div>
                     <div className="card-actions">
-                      <button className="btn-icon" title="Ver detalles">
-                        <Eye size={18} />
-                        <span>Ver</span>
-                      </button>
                       <button 
                         className="btn-icon" 
                         title="Editar"
-                        onClick={() => handleEditCliente(cliente)}
+                        onClick={() => handleEditUsuario(usuario)}
                       >
                         <Edit size={18} />
                         <span>Editar</span>
@@ -454,7 +461,7 @@ function Clientes() {
                       <button 
                         className="btn-icon btn-icon-danger" 
                         title="Eliminar"
-                        onClick={() => handleDeleteCliente(cliente)}
+                        onClick={() => handleDeleteUsuario(usuario)}
                       >
                         <Trash2 size={18} />
                         <span>Eliminar</span>
@@ -466,7 +473,7 @@ function Clientes() {
 
               <div className="pagination">
                 <div className="pagination-info">
-                  Mostrando {((currentPage - 1) * limit) + 1} a {Math.min(currentPage * limit, total)} de {total} clientes
+                  Mostrando {((currentPage - 1) * limit) + 1} a {Math.min(currentPage * limit, total)} de {total} usuarios
                 </div>
                 <div className="pagination-controls">
                   <button
@@ -511,15 +518,15 @@ function Clientes() {
         </div>
       </div>
 
-      <ClienteFormModal   
+      <UsuarioFormModal   
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        onSubmit={handleCreateCliente}
+        onSubmit={handleCreateUsuario}
         loading={submitting}
-        clienteToEdit={clienteToEdit}
+        usuarioToEdit={usuarioToEdit}
       />
     </div>
   );
 }
 
-export default Clientes;
+export default Usuarios;

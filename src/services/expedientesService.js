@@ -43,6 +43,27 @@ const expedientesService = {
   delete: async (id) => {
     const response = await api.delete(`/expedientes/${id}`);
     return response.data;
+  },
+
+  // Gestión de usuarios asignados
+  asignarUsuario: async (expedienteId, usuarioData) => {
+    const response = await api.post(`/expedientes/${expedienteId}/usuarios`, usuarioData);
+    return response.data;
+  },
+
+  obtenerUsuariosAsignados: async (expedienteId) => {
+    const response = await api.get(`/expedientes/${expedienteId}/usuarios`);
+    return response.data;
+  },
+
+  actualizarPermisosUsuario: async (expedienteId, usuarioId, permisosData) => {
+    const response = await api.patch(`/expedientes/${expedienteId}/usuarios/${usuarioId}`, permisosData);
+    return response.data;
+  },
+
+  removerUsuario: async (expedienteId, usuarioId) => {
+    const response = await api.delete(`/expedientes/${expedienteId}/usuarios/${usuarioId}`);
+    return response.data;
   }
 };
 

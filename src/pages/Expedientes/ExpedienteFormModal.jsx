@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Search } from 'lucide-react';
+import { X, Search, Plus, Trash2 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import expedientesService from '../../services/expedientesService';
 import clientesService from '../../services/clientesService';
@@ -8,14 +8,15 @@ import usuariosService from '../../services/usuariosService';
 const ExpedienteFormModal = ({ expediente, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     titulo: '',
-    noSerie: '',
-    fechaApertura: '',
-    fechaCierre: '',
     estatus: 'pendiente',
-    resultado: '',
     clienteId: '',
     usuarioResponsableId: ''
   });
+
+  const [isActivo, setIsActivo] = useState(false);
+  const [usuariosAsignados, setUsuariosAsignados] = useState([]);
+  const [usuariosAsignadosIniciales, setUsuariosAsignadosIniciales] = useState([]);
+  const [todosUsuarios, setTodosUsuarios] = useState([]);
 
   const [clientes, setClientes] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
@@ -34,18 +35,17 @@ const ExpedienteFormModal = ({ expediente, onClose, onSave }) => {
   useEffect(() => {
     loadClientes();
     loadUsuarios();
+    loadTodosUsuarios();
 
     if (expediente) {
       setFormData({
         titulo: expediente.titulo || '',
-        noSerie: expediente.noSerie || '',
-        fechaApertura: expediente.fechaApertura ? expediente.fechaApertura.split('T')[0] : '',
-        fechaCierre: expediente.fechaCierre ? expediente.fechaCierre.split('T')[0] : '',
         estatus: expediente.estatus || 'pendiente',
-        resultado: expediente.resultado || '',
         clienteId: expediente.clienteId || '',
         usuarioResponsableId: expediente.usuarioResponsableId || ''
       });
+
+      setIsActivo(expediente.estatus === 'activo');
 
       if (expediente.cliente) {
         setSelectedCliente(expediente.cliente);
@@ -53,6 +53,24 @@ const ExpedienteFormModal = ({ expediente, onClose, onSave }) => {
       if (expediente.usuarioResponsable) {
         setSelectedUsuario(expediente.usuarioResponsable);
       }
+      
+      // Cargar usuarios asignados si existen
+      if (expediente.usuariosAsignados && expediente.usuariosAsignados.length > 0) {
+        const usuariosData = expediente.usuariosAsignados.map(ua => ({
+          usuarioId: ua.usuarioId,
+          usuario: ua.usuario,
+          puedeEditar: ua.puedeEditar ?? true,
+          puedeVerDocumentos: ua.puedeVerDocumentos ?? true,
+          notas: ua.notas || ''
+        }));
+        setUsuariosAsignados(usuariosData);
+        setUsuariosAsignadosIniciales(JSON.parse(JSON.stringify(usuariosData))); // Copia profunda
+      }
+    } else {
+      // Reset para modo creación
+      setIsActivo(false);
+      setUsuariosAsignados([]);
+      setUsuariosAsignadosIniciales([]);
     }
   }, [expediente]);
 
@@ -83,11 +101,22 @@ const ExpedienteFormModal = ({ expediente, onClose, onSave }) => {
 
   const loadUsuarios = async () => {
     try {
+      const response = await usuariosService.getResponsables();
+      // El endpoint ya filtra solo administradores y abogados activos
+      const usuariosData = response.data || response || [];
+      setUsuarios(usuariosData);
+    } catch (error) {
+      console.error('Error loading usuarios responsables:', error);
+    }
+  };
+
+  const loadTodosUsuarios = async () => {
+    try {
       const response = await usuariosService.getAll(1, 100);
       const usuariosData = response.data?.data || response.data || [];
-      setUsuarios(usuariosData.filter(u => u.activo));
+      setTodosUsuarios(usuariosData.filter(u => u.activo));
     } catch (error) {
-      console.error('Error loading usuarios:', error);
+      console.error('Error loading todos los usuarios:', error);
     }
   };
 
@@ -133,6 +162,42 @@ const ExpedienteFormModal = ({ expediente, onClose, onSave }) => {
     }
   };
 
+  // Funciones para manejar usuarios asignados
+  const agregarUsuarioAsignado = () => {
+    setUsuariosAsignados(prev => [...prev, {
+      usuarioId: '',
+      usuario: null,
+      puedeEditar: true,
+      puedeVerDocumentos: true,
+      notas: ''
+    }]);
+  };
+
+  const eliminarUsuarioAsignado = (index) => {
+    setUsuariosAsignados(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const actualizarUsuarioAsignado = (index, field, value) => {
+    setUsuariosAsignados(prev => prev.map((ua, i) => 
+      i === index ? { ...ua, [field]: value } : ua
+    ));
+  };
+
+  const seleccionarUsuarioAsignado = (index, usuario) => {
+    setUsuariosAsignados(prev => prev.map((ua, i) => 
+      i === index ? { ...ua, usuarioId: usuario.id, usuario } : ua
+    ));
+  };
+
+  const getUsuariosDisponibles = (indexActual) => {
+    const usuariosYaAsignados = usuariosAsignados
+      .filter((_, i) => i !== indexActual)
+      .map(ua => ua.usuarioId)
+      .filter(id => id);
+    
+    return todosUsuarios.filter(u => !usuariosYaAsignados.includes(u.id));
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -149,16 +214,6 @@ const ExpedienteFormModal = ({ expediente, onClose, onSave }) => {
       newErrors.titulo = 'El título es requerido';
     } else if (formData.titulo.length > 200) {
       newErrors.titulo = 'El título no puede exceder 200 caracteres';
-    }
-
-    if (!formData.noSerie.trim()) {
-      newErrors.noSerie = 'El número de serie es requerido';
-    } else if (formData.noSerie.length > 100) {
-      newErrors.noSerie = 'El número de serie no puede exceder 100 caracteres';
-    }
-
-    if (!formData.fechaApertura) {
-      newErrors.fechaApertura = 'La fecha de apertura es requerida';
     }
 
     if (!formData.clienteId) {
@@ -184,8 +239,8 @@ const ExpedienteFormModal = ({ expediente, onClose, onSave }) => {
       title: expediente ? '¿Actualizar expediente?' : '¿Crear nuevo expediente?',
       html: `
         <p>¿Estás seguro de ${expediente ? 'actualizar' : 'crear'} el expediente?</p>
-        <p><strong>${formData.noSerie}</strong></p>
-        <p>${formData.titulo}</p>
+        <p><strong>${formData.titulo}</strong></p>
+        <p>Estatus: ${isActivo ? 'Activo' : 'Pendiente'}</p>
       `,
       icon: 'question',
       showCancelButton: true,
@@ -205,14 +260,33 @@ const ExpedienteFormModal = ({ expediente, onClose, onSave }) => {
     setIsSubmitting(true);
 
     try {
-      // Preparar datos - eliminar campos vacíos opcionales
-      const dataToSend = { ...formData };
-      if (!dataToSend.fechaCierre) delete dataToSend.fechaCierre;
-      if (!dataToSend.resultado) delete dataToSend.resultado;
+      // Preparar datos con el estatus correcto
+      const dataToSend = {
+        ...formData,
+        estatus: isActivo ? 'activo' : 'pendiente'
+      };
 
       if (expediente) {
+        // MODO EDICIÓN: Actualizar expediente y gestionar usuarios por separado
         await expedientesService.update(expediente.id, dataToSend);
+        
+        // Gestionar cambios en usuarios asignados
+        await gestionarCambiosUsuarios(expediente.id);
       } else {
+        // MODO CREACIÓN: Enviar usuarios en el DTO
+        const usuariosValidos = usuariosAsignados
+          .filter(ua => ua.usuarioId)
+          .map(ua => ({
+            usuarioId: ua.usuarioId,
+            puedeEditar: ua.puedeEditar,
+            puedeVerDocumentos: ua.puedeVerDocumentos,
+            notas: ua.notas || null
+          }));
+
+        if (usuariosValidos.length > 0) {
+          dataToSend.usuariosAsignados = usuariosValidos;
+        }
+
         await expedientesService.create(dataToSend);
       }
 
@@ -236,6 +310,71 @@ const ExpedienteFormModal = ({ expediente, onClose, onSave }) => {
     }
   };
 
+  const gestionarCambiosUsuarios = async (expedienteId) => {
+    // Usuarios actuales válidos
+    const usuariosActuales = usuariosAsignados.filter(ua => ua.usuarioId);
+    const usuariosInicialesIds = usuariosAsignadosIniciales.map(ua => ua.usuarioId);
+    const usuariosActualesIds = usuariosActuales.map(ua => ua.usuarioId);
+
+    // 1. Identificar usuarios eliminados
+    const usuariosEliminados = usuariosAsignadosIniciales.filter(
+      ui => !usuariosActualesIds.includes(ui.usuarioId)
+    );
+
+    // 2. Identificar usuarios nuevos
+    const usuariosNuevos = usuariosActuales.filter(
+      ua => !usuariosInicialesIds.includes(ua.usuarioId)
+    );
+
+    // 3. Identificar usuarios modificados
+    const usuariosModificados = usuariosActuales.filter(ua => {
+      const inicial = usuariosAsignadosIniciales.find(ui => ui.usuarioId === ua.usuarioId);
+      if (!inicial) return false;
+      
+      return (
+        inicial.puedeEditar !== ua.puedeEditar ||
+        inicial.puedeVerDocumentos !== ua.puedeVerDocumentos ||
+        inicial.notas !== ua.notas
+      );
+    });
+
+    // Ejecutar cambios
+    const promises = [];
+
+    // Eliminar usuarios
+    usuariosEliminados.forEach(usuario => {
+      promises.push(
+        expedientesService.removerUsuario(expedienteId, usuario.usuarioId)
+      );
+    });
+
+    // Agregar usuarios nuevos
+    usuariosNuevos.forEach(usuario => {
+      promises.push(
+        expedientesService.asignarUsuario(expedienteId, {
+          usuarioId: usuario.usuarioId,
+          puedeEditar: usuario.puedeEditar,
+          puedeVerDocumentos: usuario.puedeVerDocumentos,
+          notas: usuario.notas || null
+        })
+      );
+    });
+
+    // Actualizar permisos de usuarios modificados
+    usuariosModificados.forEach(usuario => {
+      promises.push(
+        expedientesService.actualizarPermisosUsuario(expedienteId, usuario.usuarioId, {
+          puedeEditar: usuario.puedeEditar,
+          puedeVerDocumentos: usuario.puedeVerDocumentos,
+          notas: usuario.notas || null
+        })
+      );
+    });
+
+    // Esperar todas las operaciones
+    await Promise.all(promises);
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
@@ -248,58 +387,21 @@ const ExpedienteFormModal = ({ expediente, onClose, onSave }) => {
 
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="titulo">
-                  Título del Expediente <span className="required">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="titulo"
-                  name="titulo"
-                  value={formData.titulo}
-                  onChange={handleChange}
-                  className={errors.titulo ? 'error' : ''}
-                  placeholder="Ej: Juicio de Amparo - Empresa XYZ"
-                  disabled={isSubmitting}
-                />
-                {errors.titulo && <span className="error-message">{errors.titulo}</span>}
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="noSerie">
-                  Número de Serie <span className="required">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="noSerie"
-                  name="noSerie"
-                  value={formData.noSerie}
-                  onChange={handleChange}
-                  className={errors.noSerie ? 'error' : ''}
-                  placeholder="Ej: EXP-2026-001"
-                  disabled={isSubmitting}
-                />
-                {errors.noSerie && <span className="error-message">{errors.noSerie}</span>}
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="fechaApertura">
-                  Fecha de Apertura <span className="required">*</span>
-                </label>
-                <input
-                  type="date"
-                  id="fechaApertura"
-                  name="fechaApertura"
-                  value={formData.fechaApertura}
-                  onChange={handleChange}
-                  className={errors.fechaApertura ? 'error' : ''}
-                  disabled={isSubmitting}
-                />
-                {errors.fechaApertura && <span className="error-message">{errors.fechaApertura}</span>}
-              </div>
+            <div className="form-group">
+              <label htmlFor="titulo">
+                Título del Expediente <span className="required">*</span>
+              </label>
+              <input
+                type="text"
+                id="titulo"
+                name="titulo"
+                value={formData.titulo}
+                onChange={handleChange}
+                className={errors.titulo ? 'error' : ''}
+                placeholder="Ej: Juicio de Amparo - Empresa XYZ"
+                disabled={isSubmitting}
+              />
+              {errors.titulo && <span className="error-message">{errors.titulo}</span>}
             </div>
 
             {/* Select2 para Cliente */}
@@ -410,52 +512,127 @@ const ExpedienteFormModal = ({ expediente, onClose, onSave }) => {
               {errors.usuarioResponsableId && <span className="error-message">{errors.usuarioResponsableId}</span>}
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="estatus">Estatus</label>
-                <select
-                  id="estatus"
-                  name="estatus"
-                  value={formData.estatus}
-                  onChange={handleChange}
+            {/* Sección de Usuarios Asignados */}
+            <div className="usuarios-asignados-section">
+              <div className="section-header">
+                <label>Usuarios Asignados al Expediente</label>
+                <button
+                  type="button"
+                  className="btn-add-usuario"
+                  onClick={agregarUsuarioAsignado}
                   disabled={isSubmitting}
                 >
-                  <option value="pendiente">Pendiente</option>
-                  <option value="activo">Activo</option>
-                  <option value="suspendido">Suspendido</option>
-                  <option value="cancelado">Cancelado</option>
-                  <option value="cerrado">Cerrado</option>
-                </select>
+                  <Plus size={16} />
+                  Agregar Usuario
+                </button>
               </div>
+              <small className="form-help">
+                Asigna abogados o pasantes que trabajarán en este expediente
+              </small>
 
-              <div className="form-group">
-                <label htmlFor="fechaCierre">Fecha de Cierre</label>
-                <input
-                  type="date"
-                  id="fechaCierre"
-                  name="fechaCierre"
-                  value={formData.fechaCierre}
-                  onChange={handleChange}
-                  disabled={isSubmitting}
-                />
-              </div>
+              {usuariosAsignados.length > 0 && (
+                <div className="usuarios-asignados-list">
+                  {usuariosAsignados.map((ua, index) => (
+                    <div key={index} className="usuario-asignado-item">
+                      <div className="usuario-asignado-header">
+                        <span className="usuario-numero">Usuario {index + 1}</span>
+                        <button
+                          type="button"
+                          className="btn-remove-usuario"
+                          onClick={() => eliminarUsuarioAsignado(index)}
+                          disabled={isSubmitting}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+
+                      <div className="usuario-asignado-body">
+                        <div className="form-group">
+                          <label>Seleccionar Usuario</label>
+                          <select
+                            value={ua.usuarioId}
+                            onChange={(e) => {
+                              const usuarioSeleccionado = todosUsuarios.find(u => u.id === e.target.value);
+                              if (usuarioSeleccionado) {
+                                seleccionarUsuarioAsignado(index, usuarioSeleccionado);
+                              }
+                            }}
+                            disabled={isSubmitting}
+                            className="select-usuario-asignado"
+                          >
+                            <option value="">Selecciona un usuario...</option>
+                            {getUsuariosDisponibles(index).map((usuario) => (
+                              <option key={usuario.id} value={usuario.id}>
+                                {getUsuarioNombre(usuario)} - {usuario.tipoUsuario}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {ua.usuarioId && (
+                          <>
+                            <div className="permisos-grid">
+                              <label className="checkbox-label">
+                                <input
+                                  type="checkbox"
+                                  checked={ua.puedeEditar}
+                                  onChange={(e) => actualizarUsuarioAsignado(index, 'puedeEditar', e.target.checked)}
+                                  disabled={isSubmitting}
+                                />
+                                <span>Puede editar el expediente</span>
+                              </label>
+
+                              <label className="checkbox-label">
+                                <input
+                                  type="checkbox"
+                                  checked={ua.puedeVerDocumentos}
+                                  onChange={(e) => actualizarUsuarioAsignado(index, 'puedeVerDocumentos', e.target.checked)}
+                                  disabled={isSubmitting}
+                                />
+                                <span>Puede ver documentos</span>
+                              </label>
+                            </div>
+
+                            <div className="form-group">
+                              <label>Notas (opcional)</label>
+                              <textarea
+                                value={ua.notas}
+                                onChange={(e) => actualizarUsuarioAsignado(index, 'notas', e.target.value)}
+                                placeholder="Responsabilidades, observaciones..."
+                                disabled={isSubmitting}
+                                rows="2"
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="form-group">
-              <label htmlFor="resultado">Resultado</label>
-              <select
-                id="resultado"
-                name="resultado"
-                value={formData.resultado}
-                onChange={handleChange}
-                disabled={isSubmitting}
-              >
-                <option value="">Selecciona un resultado...</option>
-                <option value="ganado">Ganado</option>
-                <option value="perdido">Perdido</option>
-              </select>
+              <label htmlFor="estatus-switch">
+                Estatus del Expediente
+              </label>
+              <div className="switch-container">
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    id="estatus-switch"
+                    checked={isActivo}
+                    onChange={(e) => setIsActivo(e.target.checked)}
+                    disabled={isSubmitting}
+                  />
+                  <span className="slider"></span>
+                </label>
+                <span className="switch-label">
+                  {isActivo ? 'Activo' : 'Pendiente'}
+                </span>
+              </div>
               <small className="form-help">
-                El resultado solo aplica cuando el expediente está cerrado
+                Marca como activo si el expediente ya está en proceso, o déjalo como pendiente si aún no ha iniciado
               </small>
             </div>
           </div>

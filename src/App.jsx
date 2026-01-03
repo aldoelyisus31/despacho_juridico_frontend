@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Clientes from './pages/Clientes';
+import Usuarios from './pages/Usuarios';
 import AreasSubareas from './pages/AreasSubareas';
 import Expedientes from './pages/Expedientes';
 import Documentos from './pages/Documentos';
@@ -26,6 +27,7 @@ function App() {
           }>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/clientes" element={<Clientes />} />
+            <Route path="/usuarios" element={<Usuarios />} />
             <Route path="/areas-subareas" element={<AreasSubareas />} />
             <Route path="/expedientes" element={<Expedientes />} />
             <Route path="/documentos" element={<Documentos />} />

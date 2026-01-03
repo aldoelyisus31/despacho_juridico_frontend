@@ -14,7 +14,8 @@ import {
   Bell,
   LogOut,
   Scale,
-  FolderTree
+  FolderTree,
+  UserCog
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import './Layout.css';
@@ -28,6 +29,7 @@ function Layout() {
   const menuItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/clientes', icon: Users, label: 'Clientes' },
+    { path: '/usuarios', icon: UserCog, label: 'Usuarios' },
     { path: '/areas-subareas', icon: FolderTree, label: 'Áreas de Derecho' },
     { path: '/expedientes', icon: Briefcase, label: 'Expedientes' },
     { path: '/documentos', icon: FileText, label: 'Documentos' },

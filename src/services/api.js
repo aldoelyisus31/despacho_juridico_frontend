@@ -28,11 +28,9 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Solo redirigir al login si es un error 401 Y hay un token guardado
-    // (significa que el token expiró o es inválido)
-    // No redirigir en el login inicial
+    
     if (error.response?.status === 401 && localStorage.getItem('accessToken')) {
-      // Token expirado o inválido
+      
       localStorage.removeItem('accessToken');
       localStorage.removeItem('usuario');
       if (window.location.pathname !== '/') {

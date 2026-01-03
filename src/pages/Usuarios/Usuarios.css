@@ -1,4 +1,4 @@
-.clientes-page {
+.usuarios-page {
   width: 100%;
   max-width: 1600px;
   margin: 0 auto;
@@ -102,17 +102,17 @@
   overflow-x: auto;
 }
 
-.clientes-table {
+.usuarios-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.clientes-table thead {
+.usuarios-table thead {
   background: #f7fafc;
   border-bottom: 2px solid #e2e8f0;
 }
 
-.clientes-table th {
+.usuarios-table th {
   padding: 16px 20px;
   text-align: left;
   font-size: 13px;
@@ -122,47 +122,68 @@
   letter-spacing: 0.5px;
 }
 
-.clientes-table td {
+.usuarios-table td {
   padding: 16px 20px;
   border-bottom: 1px solid #e2e8f0;
   font-size: 14px;
   color: #2d3748;
 }
 
-.clientes-table tbody tr {
+.usuarios-table tbody tr {
   transition: background 0.2s;
 }
 
-.clientes-table tbody tr:hover {
+.usuarios-table tbody tr:hover {
   background: #f7fafc;
 }
 
-.cliente-nombre {
+.usuario-nombre {
   font-weight: 600;
   color: #1a202c;
 }
 
-.cliente-email {
+.usuario-email {
   color: #718096;
   font-size: 13px;
 }
 
 .badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
 }
 
-.badge-particular {
-  background: #e0f2fe;
-  color: #0369a1;
+.badge-tipo {
+  text-transform: capitalize;
 }
 
-.badge-empresa {
-  background: #dbeafe;
-  color: #1e40af;
+.badge-root {
+  background: #7c3aed;
+  color: white;
+}
+
+.badge-administrador {
+  background: #2563eb;
+  color: white;
+}
+
+.badge-administrativo {
+  background: #0891b2;
+  color: white;
+}
+
+.badge-abogado {
+  background: #059669;
+  color: white;
+}
+
+.badge-pasante {
+  background: #f59e0b;
+  color: white;
 }
 
 .badge-activo {
@@ -420,23 +441,92 @@
   cursor: not-allowed;
 }
 
-.form-group .error {
+.form-group input.error,
+.form-group select.error,
+.form-group textarea.error {
+  border-color: #e53e3e;
+}
+
+.error-message {
   font-size: 13px;
   color: #e53e3e;
   margin-top: 4px;
 }
 
-.form-section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #2d3748;
-  margin: 24px 0 16px 0;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #e2e8f0;
+.form-help {
+  display: block;
+  font-size: 0.875rem;
+  color: #7f8c8d;
+  margin-top: 0.5rem;
+  font-style: italic;
 }
 
-.form-section-title:first-child {
-  margin-top: 0;
+/* Switch Toggle */
+.switch-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 26px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.3s;
+  border-radius: 26px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+.switch input:checked + .slider {
+  background-color: #27ae60;
+}
+
+.switch input:focus + .slider {
+  box-shadow: 0 0 1px #27ae60;
+}
+
+.switch input:checked + .slider:before {
+  transform: translateX(24px);
+}
+
+.switch input:disabled + .slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.switch-label {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #2c3e50;
 }
 
 .modal-footer {
@@ -464,29 +554,12 @@
   border-color: #cbd5e0;
 }
 
-/* SweetAlert2 personalización */
-.swal-custom {
-  font-family: inherit;
-  border-radius: 12px;
-}
-
-.swal2-popup .swal2-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #1a202c;
-}
-
-.swal2-popup .swal2-html-container {
-  font-size: 16px;
-  color: #4a5568;
-}
-
 /* Vista de tarjetas para móviles */
-.clientes-cards {
+.usuarios-cards {
   display: none;
 }
 
-.cliente-card {
+.usuario-card {
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
@@ -560,6 +633,12 @@
   display: none;
 }
 
+/* SweetAlert2 personalización */
+.swal-custom {
+  font-family: inherit;
+  border-radius: 12px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .page-header {
@@ -579,11 +658,11 @@
     gap: 16px;
   }
 
-  .clientes-table {
+  .usuarios-table {
     display: none;
   }
 
-  .clientes-cards {
+  .usuarios-cards {
     display: block;
     padding: 16px;
   }
@@ -616,11 +695,11 @@
     justify-content: center;
   }
 
-  .clientes-cards {
+  .usuarios-cards {
     padding: 12px;
   }
 
-  .cliente-card {
+  .usuario-card {
     padding: 12px;
   }
 
@@ -632,6 +711,7 @@
   .card-badges {
     align-items: flex-start;
     flex-direction: row;
+    flex-wrap: wrap;
   }
 
   .pagination-info {
