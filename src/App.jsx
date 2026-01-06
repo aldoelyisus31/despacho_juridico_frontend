@@ -8,6 +8,7 @@ import Clientes from './pages/Clientes';
 import Usuarios from './pages/Usuarios';
 import AreasSubareas from './pages/AreasSubareas';
 import Expedientes from './pages/Expedientes';
+import ExpedienteDetalle from './pages/Expedientes/ExpedienteDetalle';
 import Documentos from './pages/Documentos';
 import Agenda from './pages/Agenda';
 import Tareas from './pages/Tareas';
@@ -30,6 +31,7 @@ function App() {
             <Route path="/usuarios" element={<Usuarios />} />
             <Route path="/areas-subareas" element={<AreasSubareas />} />
             <Route path="/expedientes" element={<Expedientes />} />
+            <Route path="/expedientes/:id" element={<ExpedienteDetalle />} />
             <Route path="/documentos" element={<Documentos />} />
             <Route path="/agenda" element={<Agenda />} />
             <Route path="/tareas" element={<Tareas />} />

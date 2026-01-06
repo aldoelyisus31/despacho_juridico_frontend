@@ -10,7 +10,8 @@ const ExpedienteFormModal = ({ expediente, onClose, onSave }) => {
     titulo: '',
     estatus: 'pendiente',
     clienteId: '',
-    usuarioResponsableId: ''
+    usuarioResponsableId: '',
+    comentarioInicial: ''
   });
 
   const [isActivo, setIsActivo] = useState(false);
@@ -42,7 +43,8 @@ const ExpedienteFormModal = ({ expediente, onClose, onSave }) => {
         titulo: expediente.titulo || '',
         estatus: expediente.estatus || 'pendiente',
         clienteId: expediente.clienteId || '',
-        usuarioResponsableId: expediente.usuarioResponsableId || ''
+        usuarioResponsableId: expediente.usuarioResponsableId || '',
+        comentarioInicial: '' // No se carga en edición
       });
 
       setIsActivo(expediente.estatus === 'activo');
@@ -61,6 +63,7 @@ const ExpedienteFormModal = ({ expediente, onClose, onSave }) => {
           usuario: ua.usuario,
           puedeEditar: ua.puedeEditar ?? true,
           puedeVerDocumentos: ua.puedeVerDocumentos ?? true,
+          puedeComentarios: ua.puedeComentarios ?? true,
           notas: ua.notas || ''
         }));
         setUsuariosAsignados(usuariosData);
@@ -169,6 +172,7 @@ const ExpedienteFormModal = ({ expediente, onClose, onSave }) => {
       usuario: null,
       puedeEditar: true,
       puedeVerDocumentos: true,
+      puedeComentarios: true,
       notas: ''
     }]);
   };
@@ -280,11 +284,17 @@ const ExpedienteFormModal = ({ expediente, onClose, onSave }) => {
             usuarioId: ua.usuarioId,
             puedeEditar: ua.puedeEditar,
             puedeVerDocumentos: ua.puedeVerDocumentos,
+            puedeComentarios: ua.puedeComentarios,
             notas: ua.notas || null
           }));
 
         if (usuariosValidos.length > 0) {
           dataToSend.usuariosAsignados = usuariosValidos;
+        }
+
+        // Agregar comentario inicial si se proporcionó
+        if (formData.comentarioInicial && formData.comentarioInicial.trim()) {
+          dataToSend.comentarioInicial = formData.comentarioInicial.trim();
         }
 
         await expedientesService.create(dataToSend);
@@ -334,6 +344,7 @@ const ExpedienteFormModal = ({ expediente, onClose, onSave }) => {
       return (
         inicial.puedeEditar !== ua.puedeEditar ||
         inicial.puedeVerDocumentos !== ua.puedeVerDocumentos ||
+        inicial.puedeComentarios !== ua.puedeComentarios ||
         inicial.notas !== ua.notas
       );
     });
@@ -355,6 +366,7 @@ const ExpedienteFormModal = ({ expediente, onClose, onSave }) => {
           usuarioId: usuario.usuarioId,
           puedeEditar: usuario.puedeEditar,
           puedeVerDocumentos: usuario.puedeVerDocumentos,
+          puedeComentarios: usuario.puedeComentarios,
           notas: usuario.notas || null
         })
       );
@@ -366,6 +378,7 @@ const ExpedienteFormModal = ({ expediente, onClose, onSave }) => {
         expedientesService.actualizarPermisosUsuario(expedienteId, usuario.usuarioId, {
           puedeEditar: usuario.puedeEditar,
           puedeVerDocumentos: usuario.puedeVerDocumentos,
+          puedeComentarios: usuario.puedeComentarios,
           notas: usuario.notas || null
         })
       );
@@ -591,6 +604,16 @@ const ExpedienteFormModal = ({ expediente, onClose, onSave }) => {
                                 />
                                 <span>Puede ver documentos</span>
                               </label>
+
+                              <label className="checkbox-label">
+                                <input
+                                  type="checkbox"
+                                  checked={ua.puedeComentarios}
+                                  onChange={(e) => actualizarUsuarioAsignado(index, 'puedeComentarios', e.target.checked)}
+                                  disabled={isSubmitting}
+                                />
+                                <span>Puede crear/editar comentarios</span>
+                              </label>
                             </div>
 
                             <div className="form-group">
@@ -635,6 +658,28 @@ const ExpedienteFormModal = ({ expediente, onClose, onSave }) => {
                 Marca como activo si el expediente ya está en proceso, o déjalo como pendiente si aún no ha iniciado
               </small>
             </div>
+
+            {/* Comentario Inicial - Solo en creación */}
+            {!expediente && (
+              <div className="form-group">
+                <label htmlFor="comentarioInicial">
+                  Comentario Inicial (Opcional)
+                </label>
+                <textarea
+                  id="comentarioInicial"
+                  name="comentarioInicial"
+                  value={formData.comentarioInicial}
+                  onChange={handleChange}
+                  placeholder="Agrega un comentario inicial para este expediente..."
+                  disabled={isSubmitting}
+                  rows="3"
+                  style={{ resize: 'vertical' }}
+                />
+                <small className="form-help">
+                  Este comentario se agregará a la bitácora del expediente al momento de crearlo
+                </small>
+              </div>
+            )}
           </div>
 
           <div className="modal-footer">

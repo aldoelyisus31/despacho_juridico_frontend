@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Eye, FileText, User, Calendar } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import { useAuth } from '../../context/AuthContext';
 import expedientesService from '../../services/expedientesService';
 import ExpedienteFormModal from './ExpedienteFormModal';
 import './Expedientes.css';
 
 const Expedientes = () => {
+  const navigate = useNavigate();
+  const { usuario } = useAuth();
   const [expedientes, setExpedientes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -53,6 +57,10 @@ const Expedientes = () => {
   const handleEdit = (expediente) => {
     setExpedienteToEdit(expediente);
     setShowModal(true);
+  };
+
+  const handleViewDetalle = (expediente) => {
+    navigate(`/expedientes/${expediente.id}`);
   };
 
   const handleDelete = async (expediente) => {
@@ -327,19 +335,36 @@ const Expedientes = () => {
                     <td>
                       <div className="table-actions">
                         <button
-                          className="btn-icon btn-icon-edit"
-                          onClick={() => handleEdit(expediente)}
-                          title="Editar expediente"
+                          className="btn-icon btn-icon-view"
+                          onClick={() => handleViewDetalle(expediente)}
+                          title="Ver detalle"
                         >
-                          <Edit2 size={16} />
+                          <Eye size={16} />
                         </button>
-                        <button
-                          className="btn-icon btn-icon-danger"
-                          onClick={() => handleDelete(expediente)}
-                          title="Eliminar expediente"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        {/* Mostrar botones de editar/eliminar si:
+                            1. El usuario es administrador, administrativo o root (siempre tiene acceso)
+                            2. O si tiene permisos de edición en el expediente */}
+                        {(usuario?.tipoUsuario === 'administrador' || 
+                          usuario?.tipoUsuario === 'administrativo' || 
+                          usuario?.tipoUsuario === 'root' ||
+                          expediente.misPermisos?.puedeEditar !== false) && (
+                          <>
+                            <button
+                              className="btn-icon btn-icon-edit"
+                              onClick={() => handleEdit(expediente)}
+                              title="Editar expediente"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                            <button
+                              className="btn-icon btn-icon-danger"
+                              onClick={() => handleDelete(expediente)}
+                              title="Eliminar expediente"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

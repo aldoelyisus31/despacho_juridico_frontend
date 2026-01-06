@@ -15,6 +15,12 @@ const expedientesService = {
     return response.data;
   },
 
+  // Obtener permisos del usuario logueado sobre un expediente
+  getMisPermisos: async (id) => {
+    const response = await api.get(`/expedientes/${id}/mis-permisos`);
+    return response.data;
+  },
+
   // Obtener expedientes por cliente
   getByCliente: async (clienteId) => {
     const response = await api.get(`/expedientes/cliente/${clienteId}`);

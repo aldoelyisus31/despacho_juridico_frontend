@@ -261,6 +261,11 @@
   background: #f8f9fa;
 }
 
+.btn-icon-view:hover {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
 .btn-icon-edit:hover {
   background: #fff3cd;
   color: #856404;
